@@ -27,10 +27,6 @@ def setRegToZero(reg):
             not_op =  bytearray([0x48,0xf7,(0xD0+registerDictionary[reg])])
             chunk += not_op
             
-
-
-
-    
     return chunk
 
 
