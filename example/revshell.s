@@ -3,6 +3,9 @@ global _start
     
 _start: 
 
+
+
+    mov rax,0x1234567887654321
     mov dil, 0x02 
     and rdi, 0x02 
 

