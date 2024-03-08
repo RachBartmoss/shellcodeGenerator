@@ -5,9 +5,12 @@ _start:
 
 
 
-    mov rax,0x1234567887654321
-    mov dil, 0x02 
-    and rdi, 0x02 
+    mov eax, 0x80808080
+    add eax, 0x7f7f8f80
+
+    mov eax, 0x7f7f8f80
+    neg eax
+    add eax, 0x1000
 
     push -1
     pop rsi

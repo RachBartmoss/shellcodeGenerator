@@ -2,6 +2,7 @@
 import struct
 import random
 import argparse
+import secrets
 
 # Set a dictionary with all the register
 registerDictionary = {"rax":0,"rcx":1,"rdx":2,"rbx":3,"rsp":4,"rbp":5,"rsi":6,"rdi":7}
@@ -68,9 +69,11 @@ def preciseMovToMemory(value):
     return chunk
 
 # Move value to register with different method 
+# it is only possible to move a value under or equal to 4 bytes
 def movValueToReg(reg,value):
     chunk = bytearray()
     case = random.randint(1,3)
+    case = 4
     
     match case:
         case 1: # The push, pop, neg method
@@ -125,6 +128,41 @@ def movValueToReg(reg,value):
                         mov_n_shift.append(i)
                     
                 chunk += mov_n_shift
+        case 4: # the mask method
+
+            while(True):
+                mask = secrets.token_bytes(4)
+                print(mask)
+                
+                mask = int.from_bytes(mask)
+                complement = mask - value
+                complement = -complement
+                
+
+                mask = bytearray(struct.pack("<I",mask))
+                print(int.from_bytes(mask))
+
+                complement = bytearray(struct.pack("<q",complement))
+
+                if 0x00 in complement or 0x00 in mask:
+                    continue
+                break
+
+            mov = bytearray([(0xB8 + registerDictionary[reg])])
+            mov += mask
+            chunk += mov
+            
+            if reg == "rax":
+                addition = bytearray([0x48, 0x05])
+                addition += complement[0:4]
+            else:
+                addition = bytearray([0x48,0x81,(0xC0 + registerDictionary[reg])])
+                addition += complement[0:4]
+    
+            addition += bytearray([0x89, (0xC0 + registerDictionary[reg]*9)])
+
+            chunk += addition
+
     return chunk
 
 # Move WORD size to memory with mov
@@ -227,7 +265,8 @@ def movRegtoReg(regsrc,regdst):
             chunk += mov
         case 3: # The xor method
             xor = setRegToZero(regdst)
-            xor += bytearray([0x48,0x31,(0xC0+(registerDictionary[regsrc]*8)+(registerDictionary[regdst]))]) 
+            xor += bytearray([0x48,0x31,(0xC0+(registerDictionary[regsrc]*8)+(registerDictionary[regdst]))])
+            chunk += xor 
 
     return chunk
 
