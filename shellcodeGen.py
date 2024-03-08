@@ -47,20 +47,14 @@ def preciseMovToMemory(value):
         case 1: #mov to address method bytes per bytes
             precisemov = bytearray([0x48,0x89,0xE3])
             for i in range(len(value)):
-                if value[i] != 0:
+                    key = random.randint(1,8)
+                
                     precisemov.append(0xC6)
                     precisemov.append((0x03))
-                    precisemov.append(value[i])
-                    precisemov.append(0x48)
-                    precisemov.append(0xff)
-                    precisemov.append(0xC3)
-                else:
-                    precisemov.append(0xC6)
-                    precisemov.append((0x03))
-                    precisemov.append(value[i]+1)
+                    precisemov.append(value[i]+key)
                     precisemov.append(0x80)
                     precisemov.append(0x2B)
-                    precisemov.append(0x01)
+                    precisemov.append((0x00 + key))
                     precisemov.append(0x48)
                     precisemov.append(0xff)
                     precisemov.append(0xC3)
@@ -72,8 +66,8 @@ def preciseMovToMemory(value):
 # it is only possible to move a value under or equal to 4 bytes
 def movValueToReg(reg,value):
     chunk = bytearray()
-    case = random.randint(1,3)
-    case = 4
+    case = random.randint(1,4)
+    
     
     match case:
         case 1: # The push, pop, neg method
