@@ -322,3 +322,5 @@ def main():
             print("\\x0{}".format(hex(i).lstrip("0x")),end='')
         else:
             print("\\x{}".format(hex(i).lstrip("0x")),end='')
+
+main()
