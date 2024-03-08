@@ -31,7 +31,7 @@ def setRegToZero(reg):
             
     return chunk
 
-# Move value to address with 1 and 0 management 
+# Move value to address with 1 and 0 management for avoiding null bytes
 def preciseMovToMemory(value):
     chunk = bytearray()
     value = bytearray(value)
@@ -39,7 +39,7 @@ def preciseMovToMemory(value):
     case = random.randint(1,1)
 
     match case:
-        case 1: #mov to address method
+        case 1: #mov to address method bytes per bytes
             precisemov = bytearray([0x48,0x89,0xE3])
             for i in range(len(value)):
                 if value[i] != 0:
@@ -136,7 +136,6 @@ def movWORDToMemory(offset,reg):
                 mov.append(offset)
             chunk += mov
 
-
     return chunk
 
 # Move DWORD size to memory with mov
@@ -211,7 +210,7 @@ def pushDWORDToStack(reg):
 # Move register to register with different method 
 def movRegtoReg(regsrc,regdst):
     chunk = bytearray()
-    case = random.randint(1,2)
+    case = random.randint(1,3)
 
     match case:
         case 1: #push and pop method 
